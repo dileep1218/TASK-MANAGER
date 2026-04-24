@@ -45,7 +45,8 @@ python main.py
 
 ## 📸 Sample Output
 
-![Task Manager Output](screenshot.png)
+![Task Manager Output](output.png)
+
 
 ---
 
