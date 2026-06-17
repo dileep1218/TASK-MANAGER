@@ -1,195 +1,115 @@
-<<<<<<< HEAD
-from database import connect, create_table
+"""Command-line entry point for the Task Manager.
 
-create_table()
+This file is intentionally thin: all real logic lives in TaskManager,
+TaskRepository, and Task. main.py just wires up a simple text menu on
+top of that, so the same business logic could later be reused by the
+FastAPI layer (or a different UI) without duplicating anything here.
+"""
 
-def add_task(title, priority, due_date):
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO tasks (title, status, priority, due_date) VALUES (?, ?, ?, ?)",
-        (title, "Pending", priority, due_date)
+from __future__ import annotations
+
+from exceptions import InvalidTaskDataError, TaskManagerError, TaskNotFoundError
+from task_manager import TaskManager
+
+MENU = """
+==== Task Manager ====
+1. Add task
+2. List all tasks
+3. List tasks by status
+4. Update task
+5. Mark task as done
+6. Delete task
+0. Exit
+"""
+
+
+def print_task(task) -> None:
+    print(
+        f"[{task.id}] {task.title} "
+        f"(priority={task.priority}, status={task.status}, due={task.due_date or '—'})"
     )
-    conn.commit()
-    conn.close()
-    print("Task added successfully!")
+    if task.description:
+        print(f"    {task.description}")
 
-def view_tasks():
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tasks")
-    tasks = cursor.fetchall()
-    conn.close()
 
+def add_task(manager: TaskManager) -> None:
+    title = input("Title: ").strip()
+    description = input("Description (optional): ").strip()
+    priority = input("Priority [low/medium/high] (default medium): ").strip() or "medium"
+    due_date = input("Due date YYYY-MM-DD (optional): ").strip() or None
+
+    task = manager.create_task(title=title, description=description, priority=priority, due_date=due_date)
+    print(f"Created task #{task.id}.")
+
+
+def list_tasks(manager: TaskManager, status: str | None = None) -> None:
+    tasks = manager.list_tasks(status=status)
     if not tasks:
         print("No tasks found.")
-    else:
-        print("\n--- Task List ---")
-        for task in tasks:
-            print(f"ID:{task[0]} | {task[1]} | {task[2]} | Priority:{task[3]} | Due:{task[4]}")
-
-def filter_tasks(status):
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tasks WHERE status=?", (status,))
-    tasks = cursor.fetchall()
-    conn.close()
-
-    print(f"\n--- {status} Tasks ---")
+        return
     for task in tasks:
-        print(task)
-
-def update_task(task_id, status):
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE tasks SET status=? WHERE id=?", (status, task_id))
-    conn.commit()
-    conn.close()
-    print("Task updated!")
-
-def delete_task(task_id):
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM tasks WHERE id=?", (task_id,))
-    conn.commit()
-    conn.close()
-    print("Task deleted!")
+        print_task(task)
 
 
-# Menu
-while True:
-    print("\n===== Task Manager =====")
-    print("1. Add Task")
-    print("2. View Tasks")
-    print("3. Update Task")
-    print("4. Delete Task")
-    print("5. Filter Tasks")
-    print("6. Exit")
-
-    choice = input("Enter choice: ")
-
-    if choice == "1":
-        title = input("Enter task: ")
-        priority = input("Priority (High/Medium/Low): ")
-        due_date = input("Due date (YYYY-MM-DD): ")
-        add_task(title, priority, due_date)
-
-    elif choice == "2":
-        view_tasks()
-
-    elif choice == "3":
-        task_id = int(input("Enter task ID: "))
-        status = input("Status (Pending/Done): ")
-        update_task(task_id, status)
-
-    elif choice == "4":
-        task_id = int(input("Enter task ID: "))
-        delete_task(task_id)
-
-    elif choice == "5":
-        status = input("Enter status to filter (Pending/Done): ")
-        filter_tasks(status)
-
-    elif choice == "6":
-        break
-
-    else:
-        print("Invalid choice")
-=======
-from database import connect, create_table
-
-create_table()
-
-def add_task(title, priority, due_date):
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO tasks (title, status, priority, due_date) VALUES (?, ?, ?, ?)",
-        (title, "Pending", priority, due_date)
-    )
-    conn.commit()
-    conn.close()
-    print("Task added successfully!")
-
-def view_tasks():
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tasks")
-    tasks = cursor.fetchall()
-    conn.close()
-
-    if not tasks:
-        print("No tasks found.")
-    else:
-        print("\n--- Task List ---")
-        for task in tasks:
-            print(f"ID:{task[0]} | {task[1]} | {task[2]} | Priority:{task[3]} | Due:{task[4]}")
-
-def filter_tasks(status):
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tasks WHERE status=?", (status,))
-    tasks = cursor.fetchall()
-    conn.close()
-
-    print(f"\n--- {status} Tasks ---")
-    for task in tasks:
-        print(task)
-
-def update_task(task_id, status):
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE tasks SET status=? WHERE id=?", (status, task_id))
-    conn.commit()
-    conn.close()
-    print("Task updated!")
-
-def delete_task(task_id):
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM tasks WHERE id=?", (task_id,))
-    conn.commit()
-    conn.close()
-    print("Task deleted!")
+def update_task(manager: TaskManager) -> None:
+    task_id = int(input("Task id to update: ").strip())
+    print("Leave a field blank to keep its current value.")
+    fields = {}
+    for field in ("title", "description", "priority", "status", "due_date"):
+        value = input(f"New {field}: ").strip()
+        if value:
+            fields[field] = value
+    updated = manager.update_task(task_id, **fields)
+    print("Updated:")
+    print_task(updated)
 
 
-# Menu
-while True:
-    print("\n===== Task Manager =====")
-    print("1. Add Task")
-    print("2. View Tasks")
-    print("3. Update Task")
-    print("4. Delete Task")
-    print("5. Filter Tasks")
-    print("6. Exit")
+def mark_done(manager: TaskManager) -> None:
+    task_id = int(input("Task id to mark done: ").strip())
+    task = manager.mark_done(task_id)
+    print(f"Task #{task.id} marked as done.")
 
-    choice = input("Enter choice: ")
 
-    if choice == "1":
-        title = input("Enter task: ")
-        priority = input("Priority (High/Medium/Low): ")
-        due_date = input("Due date (YYYY-MM-DD): ")
-        add_task(title, priority, due_date)
+def delete_task(manager: TaskManager) -> None:
+    task_id = int(input("Task id to delete: ").strip())
+    manager.delete_task(task_id)
+    print(f"Task #{task_id} deleted.")
 
-    elif choice == "2":
-        view_tasks()
 
-    elif choice == "3":
-        task_id = int(input("Enter task ID: "))
-        status = input("Status (Pending/Done): ")
-        update_task(task_id, status)
+def main() -> None:
+    manager = TaskManager()
 
-    elif choice == "4":
-        task_id = int(input("Enter task ID: "))
-        delete_task(task_id)
+    actions = {
+        "1": add_task,
+        "4": update_task,
+        "5": mark_done,
+        "6": delete_task,
+    }
 
-    elif choice == "5":
-        status = input("Enter status to filter (Pending/Done): ")
-        filter_tasks(status)
+    while True:
+        print(MENU)
+        choice = input("Choose an option: ").strip()
 
-    elif choice == "6":
-        break
+        try:
+            if choice == "0":
+                print("Goodbye.")
+                break
+            elif choice == "2":
+                list_tasks(manager)
+            elif choice == "3":
+                status = input("Status to filter by [pending/done]: ").strip()
+                list_tasks(manager, status=status)
+            elif choice in actions:
+                actions[choice](manager)
+            else:
+                print("Invalid option, try again.")
+        except (InvalidTaskDataError, TaskNotFoundError) as exc:
+            print(f"Error: {exc}")
+        except TaskManagerError as exc:
+            print(f"Unexpected error: {exc}")
+        except ValueError:
+            print("Please enter a valid number for task id.")
 
-    else:
-        print("Invalid choice")
->>>>>>> c0a17f7f9ecfc5472d34e340e11406030c13221a
+
+if __name__ == "__main__":
+    main()
