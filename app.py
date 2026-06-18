@@ -1,17 +1,9 @@
-"""FastAPI application exposing TaskManager over HTTP.
-
-This file only handles HTTP concerns: routing, status codes, request/
-response shapes. All actual logic still lives in TaskManager — the API
-layer is a thin wrapper, the same way main.py was for the CLI. This
-means the CLI (main.py) and the API (this file) can both sit on top of
-the exact same business logic without duplicating anything.
-"""
 
 from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from exceptions import InvalidTaskDataError, TaskNotFoundError
@@ -33,7 +25,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-manager = TaskManager()
+_default_manager = TaskManager()
+
+
+def get_manager() -> TaskManager:
+    """Dependency provider for the active TaskManager.
+
+    Tests override this (via app.dependency_overrides) to inject a
+    TaskManager backed by a temporary database, so test runs never
+    touch the real tasks.db.
+    """
+    return _default_manager
 
 
 @app.get("/", tags=["health"])
@@ -42,7 +44,7 @@ def read_root() -> dict:
 
 
 @app.post("/tasks", response_model=TaskResponse, status_code=201, tags=["tasks"])
-def create_task(payload: TaskCreate) -> TaskResponse:
+def create_task(payload: TaskCreate, manager: TaskManager = Depends(get_manager)) -> TaskResponse:
     try:
         task = manager.create_task(
             title=payload.title,
@@ -57,14 +59,15 @@ def create_task(payload: TaskCreate) -> TaskResponse:
 
 @app.get("/tasks", response_model=list[TaskResponse], tags=["tasks"])
 def list_tasks(
-    status: Optional[str] = Query(default=None, description="Filter by 'pending' or 'done'")
+    status: Optional[str] = Query(default=None, description="Filter by 'pending' or 'done'"),
+    manager: TaskManager = Depends(get_manager),
 ) -> list[TaskResponse]:
     tasks = manager.list_tasks(status=status)
     return [TaskResponse(**t.to_dict()) for t in tasks]
 
 
 @app.get("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
-def get_task(task_id: int) -> TaskResponse:
+def get_task(task_id: int, manager: TaskManager = Depends(get_manager)) -> TaskResponse:
     try:
         task = manager.get_task(task_id)
     except TaskNotFoundError as exc:
@@ -73,7 +76,9 @@ def get_task(task_id: int) -> TaskResponse:
 
 
 @app.put("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
-def update_task(task_id: int, payload: TaskUpdate) -> TaskResponse:
+def update_task(
+    task_id: int, payload: TaskUpdate, manager: TaskManager = Depends(get_manager)
+) -> TaskResponse:
     fields = {k: v for k, v in payload.model_dump().items() if v is not None}
     try:
         task = manager.update_task(task_id, **fields)
@@ -85,7 +90,7 @@ def update_task(task_id: int, payload: TaskUpdate) -> TaskResponse:
 
 
 @app.patch("/tasks/{task_id}/done", response_model=TaskResponse, tags=["tasks"])
-def mark_task_done(task_id: int) -> TaskResponse:
+def mark_task_done(task_id: int, manager: TaskManager = Depends(get_manager)) -> TaskResponse:
     try:
         task = manager.mark_done(task_id)
     except TaskNotFoundError as exc:
@@ -94,7 +99,7 @@ def mark_task_done(task_id: int) -> TaskResponse:
 
 
 @app.delete("/tasks/{task_id}", status_code=204, tags=["tasks"])
-def delete_task(task_id: int) -> None:
+def delete_task(task_id: int, manager: TaskManager = Depends(get_manager)) -> None:
     try:
         manager.delete_task(task_id)
     except TaskNotFoundError as exc:
