@@ -1,7 +1,9 @@
+
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Optional
 
 from exceptions import InvalidTaskDataError
@@ -18,7 +20,7 @@ class Task:
     status: str = "pending"
     due_date: Optional[str] = None  # stored as ISO format string, e.g. "2026-06-30"
     id: Optional[int] = None
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def __post_init__(self) -> None:
         self.title = self.title.strip()
