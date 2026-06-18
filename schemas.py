@@ -1,10 +1,4 @@
-"""Pydantic schemas for the API layer.
 
-These are deliberately separate from the Task dataclass in task.py.
-Task is the internal domain model; these schemas define the public
-HTTP contract (what clients send and receive). Keeping them apart
-means the API shape can evolve independently of internal storage.
-"""
 
 from __future__ import annotations
 
@@ -14,10 +8,10 @@ from pydantic import BaseModel, Field
 
 
 class TaskCreate(BaseModel):
-    title: str = Field(..., min_length=1, example="Write quarterly report")
-    description: str = Field(default="", example="Summarize Q2 sales performance")
-    priority: str = Field(default="medium", example="high")
-    due_date: Optional[str] = Field(default=None, example="2026-06-30")
+    title: str = Field(..., min_length=1, json_schema_extra={"example": "Write quarterly report"})
+    description: str = Field(default="", json_schema_extra={"example": "Summarize Q2 sales performance"})
+    priority: str = Field(default="medium", json_schema_extra={"example": "high"})
+    due_date: Optional[str] = Field(default=None, json_schema_extra={"example": "2026-06-30"})
 
 
 class TaskUpdate(BaseModel):
