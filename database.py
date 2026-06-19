@@ -1,3 +1,10 @@
+"""Persistence layer for tasks.
+
+TaskRepository owns all SQL. Nothing outside this file should know
+column order or write raw SQL — callers pass and receive Task objects.
+This separation means the storage engine (SQLite here) could be swapped
+later without touching business logic in task_manager.py.
+"""
 
 from __future__ import annotations
 

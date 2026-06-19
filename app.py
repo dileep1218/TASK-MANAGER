@@ -1,3 +1,11 @@
+"""FastAPI application exposing TaskManager over HTTP.
+
+This file only handles HTTP concerns: routing, status codes, request/
+response shapes. All actual logic still lives in TaskManager — the API
+layer is a thin wrapper, the same way main.py was for the CLI. This
+means the CLI (main.py) and the API (this file) can both sit on top of
+the exact same business logic without duplicating anything.
+"""
 
 from __future__ import annotations
 

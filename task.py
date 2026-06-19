@@ -1,4 +1,10 @@
+"""Task domain model.
 
+A Task is a plain data holder with validation logic attached, so the
+rest of the codebase can trust that any Task object in memory is
+already valid — invalid data is rejected at construction time rather
+than discovered later when it's saved or displayed.
+"""
 
 from __future__ import annotations
 

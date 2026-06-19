@@ -1,4 +1,10 @@
+"""Pydantic schemas for the API layer.
 
+These are deliberately separate from the Task dataclass in task.py.
+Task is the internal domain model; these schemas define the public
+HTTP contract (what clients send and receive). Keeping them apart
+means the API shape can evolve independently of internal storage.
+"""
 
 from __future__ import annotations
 

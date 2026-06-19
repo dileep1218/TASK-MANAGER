@@ -1,3 +1,10 @@
+"""Business logic layer.
+
+TaskManager sits between the API (or CLI) and the repository. Right
+now it mostly delegates, but this is the natural place to add rules
+later — e.g. "can't mark a task done if it has unmet sub-tasks" —
+without that logic leaking into the database layer or the API routes.
+"""
 
 from __future__ import annotations
 

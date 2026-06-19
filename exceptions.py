@@ -1,3 +1,12 @@
+"""Custom exceptions for the Task Manager domain.
+
+Keeping these separate from generic exceptions makes it possible for
+calling code (and later, the API layer) to distinguish "the user did
+something invalid" from "something broke" and respond with the right
+HTTP status codes.
+"""
+
+
 class TaskManagerError(Exception):
     """Base class for all Task Manager specific errors."""
 
